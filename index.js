@@ -14,6 +14,7 @@ app.use(cors())
 const PORT = process.env.PORT || 5000
 const JWT_SECRET = process.env.JWT_SECRET;
 const url = process.env.url;
+const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || "Q8POQTFYM0BZ3V8Y";
 
 mongoose.connect(url, {
     useNewUrlParser: true,
@@ -233,7 +234,7 @@ app.put("/addbalance", async (req, res) => {
 app.put("/sell", async (req, res) => {
     const { ticker, userId, quantity,time } = req.body;
     const parsedQty = parseInt(quantity);
-
+    console.log(ticker);
     try {
         const user = jwt.verify(userId, JWT_SECRET);
         const userEmail = user.email;
@@ -259,8 +260,9 @@ app.put("/sell", async (req, res) => {
             return res.status(400).json({ msg: "You do not own enough shares of that ticker" });
         }
 
-        const dataurl = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=Q8POQTFYM0BZ3V8Y`;
+        const dataurl = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=${ALPHA_VANTAGE_API_KEY}`;
         const { data } = await axios.get(dataurl);
+        console.log(data);
         const timeSeriesData = data["Time Series (5min)"];
         const timeSeriesKeys = Object.keys(timeSeriesData);
         const firstIndexKey = timeSeriesKeys[0];
