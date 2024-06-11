@@ -11,9 +11,9 @@ const jwt = require("jsonwebtoken");
 app.use(express.json())
 app.use(cors())
 
-const PORT = 5000
-const JWT_SECRET = "bfjksbdkjfbsjdbcwjbcjwewdwjdvsdv";
-const url = "mongodb+srv://dakshr050:DakshRajput.in@cluster0.mlbysv7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const PORT = process.env.PORT || 5000
+const JWT_SECRET = process.env.JWT_SECRET;
+const url = process.env.url;
 
 mongoose.connect(url, {
     useNewUrlParser: true,
@@ -158,6 +158,7 @@ app.post("/removefromlist", async (req, res) => {
 app.put("/buy", async (req, res) => {
     const { userId, price, symbol, timestamp, quantity } = req.body;
     const ticker = symbol.toUpperCase();
+    const qty = parseInt(quantity);
     try {
         const user = jwt.verify(userId, JWT_SECRET);
         const userEmail = user.email;
@@ -170,21 +171,21 @@ app.put("/buy", async (req, res) => {
         let stockUpdated = false;
         for (let stock of userRecord.stocks) {
             if (stock.ticker === ticker) {
-                stock.quantity += quantity;
+                stock.quantity += qty;
                 stockUpdated = true;
                 break;
             }
         }
 
         if (!stockUpdated) {
-            userRecord.stocks.push({ ticker: ticker, quantity: quantity });
+            userRecord.stocks.push({ ticker: ticker, quantity: qty });
         }
         console.log(userRecord.stocks);
         const newTrade = {
             price: price,
             timestamp: timestamp,
-            quantity: quantity,
-            action: "buy",
+            quantity: qty,
+            action: "Buy",
             ticker: symbol
         };
         userRecord.trade.push(newTrade);
@@ -234,7 +235,7 @@ app.put("/addbalance", async (req, res) => {
 });
 
 app.put("/sell", async (req, res) => {
-    const { ticker, userId, quantity } = req.body;
+    const { ticker, userId, quantity,time } = req.body;
     const parsedQty = parseInt(quantity);
 
     try {
@@ -262,9 +263,8 @@ app.put("/sell", async (req, res) => {
             return res.status(400).json({ msg: "You do not own enough shares of that ticker" });
         }
 
-        const url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo";
-        // const dataurl = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=Q8POQTFYM0BZ3V8Y`;
-        const { data } = await axios.get(url);
+        const dataurl = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${ticker}&interval=5min&apikey=Q8POQTFYM0BZ3V8Y`;
+        const { data } = await axios.get(dataurl);
         const timeSeriesData = data["Time Series (5min)"];
         const timeSeriesKeys = Object.keys(timeSeriesData);
         const firstIndexKey = timeSeriesKeys[0];
@@ -273,7 +273,14 @@ app.put("/sell", async (req, res) => {
 
         const amountToAdd = parseFloat(price*parsedQty);
         userRecord.Balance = amountToAdd + userRecord.Balance;
-
+        const newTrade = {
+            price: price,
+            timestamp: time,
+            quantity: parsedQty,
+            action: "Sell",
+            ticker: ticker
+        };
+        userRecord.trade.push(newTrade);
         await userRecord.save();
         res.status(200).send({ message: "Balance added successfully", userData: userRecord });
     } catch (e) {
