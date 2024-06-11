@@ -88,7 +88,6 @@ app.post("/login", async (req, res) => {
 
 app.post("/getUserData", async (req, res) => {
     const { userId } = req.body;
-    console.log(userId);
     try {
 
         const user = jwt.verify(userId, JWT_SECRET);
@@ -180,7 +179,6 @@ app.put("/buy", async (req, res) => {
         if (!stockUpdated) {
             userRecord.stocks.push({ ticker: ticker, quantity: qty });
         }
-        console.log(userRecord.stocks);
         const newTrade = {
             price: price,
             timestamp: timestamp,
@@ -190,7 +188,6 @@ app.put("/buy", async (req, res) => {
         };
         userRecord.trade.push(newTrade);
         userRecord.Balance -= totalCost;
-        console.log(userRecord.Balance);
         const updatedUser = await userRecord.save();
 
         if (updatedUser) {
@@ -205,7 +202,6 @@ app.put("/buy", async (req, res) => {
 
 app.put("/addbalance", async (req, res) => {
     const { balance, userId } = req.body;
-    console.log(balance);
     // Validate input
     if (!balance || balance <= 0) {
         return res.status(400).send({ message: "Invalid balance amount" });
